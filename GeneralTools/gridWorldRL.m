@@ -1,0 +1,220 @@
+%%
+% This code was originally written in September 2016. It was edited Nov
+% 2020 to add comments.
+% Written by Surabhi Simha
+clearvars
+close all
+
+% We have a 4x4 grid and each square on the grid has a cost. The first and
+% last square have minimum cost of 0. That is where the learner wants to go
+costGrid = [0 1 1 1; 1 1 1 1; 1 1 1 1; 1 1 1 0]; % actual cost at each position on the grid
+len = size(costGrid,1);
+
+% here the learner begins with no model of the grid. It just has NaNs as
+% cost for all positions on the grid
+costUpdate = zeros(size(costGrid)); 
+costUpdateInit = costUpdate; % for plotting
+
+% startPos is the single number index of a position on the grid as shown
+% below. The subscript notation in matlab is [row, col]. Below shows how
+% rows, columns, and single index values are assigned to a matrix.
+%       col 1   col 2   col 3   col 4
+% row 1   1       5       9       13
+% row 2   2       6      10       14
+% row 3   3       7      11       15
+% row 4   4       8      12       16
+% we can begin by palcing the learner anywhere on the grid. we choose 8
+% here
+startPos = 8; 
+
+% "action" contains the numerical value which when added to the current
+% position of the learner, moves it [up,down,left,right,stay]. For example:
+% adding -len which is -4 (because we have 4 rows in our matrix) to the
+% current position will move the learner backwards by 4 single index value
+% positions which is a step "left" on the grid.
+action = [-1 1 -len len 0]; 
+
+% a "greedy learner" will always take a step that minimizes the cost based
+% on its model of the grid world. But this may not be the best awlays, ex:
+% when the learner has a bad model of the world. One way to address this is
+% to add some variability to the action that the learner takes. So, the
+% learner still calcualtes the action, from its 5 possible actions here,
+% which leads to the grid position with the least cost. The learner then
+% adds some varibility to that action which is weighted by epsilon here.
+% For ex: the learner finds that a move to the left is optimal, then it
+% chooses an amount of variability to add at random (implemented using
+% randn command here) to this action choice and weights it by epsilon.
+% Larger epsilon means that the actual action taken is more likely to be
+% random than optimal. % Note that here, the learner knows the exact noise
+% it ends up adding and thus knows where exactly it lands after taking the
+% action. Another possiblity is when the learner only knows that variablity
+% was added but doesn't know how much. For more details refer to Sutton, R.
+% S., & Barto, A. G. (2018). Reinforcement learning: An introduction. MIT
+% press.
+% We can play around with the value of epsilon to see what happens by
+% increasing or decreasing the variability.
+epsilon = 0.2; % exploration factor. never finds the minimum with 0.
+
+% once the learner has found a cost optimal action, taken the action and
+% measured the actual cost at the new position, it needs to update its
+% model of the cost at the that position. During this process, the learner
+% needs to determine how confident it is in the cost that it measured.
+% "alpha" represents this confidence. If the learner is very confident, it
+% has a high alpha weights the new measurement it made highly. We can play
+% around with the value of alpha to see what happens by increasing or
+% decreasing this confidence.
+alpha = 0.7; % how much to weight the new cost finding
+
+pos = startPos; % assign the current position of the learner startPos
+posVec = []; %storing as a vector to plot later
+costUpdateVec=[]; %storing as a vector to plot later
+actionChoiceVec=[]; %storing as a vector to plot later
+
+maxIter=50; % number of steps we want the learner to take
+
+
+for i = 1:maxIter
+     % ind2sub is a matlab command that converts a single index value to a
+     % [row,col] value for a matrix of given size
+    [posSub1,posSub2] = ind2sub(size(costGrid),pos);
+    % these if-else statements exist to ensure that the learner cannot go
+    % off the grid. For ex: the first if statement here checks whether the
+    % current position of the learner is on the first row. If it is, that
+    % means the that learner cannot move up. So, it assings the "up" value
+    % of "action" i.e. action(1) a value of 0 which means the learner stays
+    % put.
+    action = [-1 1 -len len 0]; % reassign the values for "action" each loop with the original 5 action values
+    if posSub1==1
+        action(1) = 0;
+    elseif posSub1==length(costGrid(:,1))
+        action(2) = 0;
+    end
+    if posSub2==1
+        action(3) = 0;
+    elseif posSub2==length(costGrid(1,:))
+        action(4) = 0;
+    end
+    % Choose the cost optimal action!
+    % here, we we determine the expected cost (stored in costUpdate) for
+    % each action and select the action with the least cost and store it in
+    % actionChoice. Note that actionChoice stores the postion of value in
+    % "action" that the learner wants to use. For ex: if actionChoice=4, it
+    % means that the learner executes action(actionChoice)=action(4)=right
+    clear actionChoiceTemp actionChoice allActionChoices
+    % make an vector array of the costs for only the five grid spaces that
+    % the learner can reach from its current position given its 5 possible
+    % actions
+    costOfPossibleActions = [costUpdate(pos+action(1));costUpdate(pos+action(2));costUpdate(pos+action(3));costUpdate(pos+action(4));costUpdate(pos+action(5))];
+    [~,actionChoiceTemp] = min(costOfPossibleActions); % find the cost optimal action!!!
+    
+    % the following 6 lines are in case there is more than one action that
+    % will give the same cost. In that case, this learner randomly picks
+    % one of the multiple cost minimal actions
+    allActionChoices = find(costOfPossibleActions==costUpdate(actionChoiceTemp));
+    if length(allActionChoices)>1
+        actionChoice = allActionChoices(randi(length(allActionChoices),1,1));
+    else
+        actionChoice=actionChoiceTemp;
+    end
+    
+    % we then add some variability to the actionChoice. actionChoice can
+    % only be 1,2,3,4 or 5. Therefore use "round" to ensure it is a whole
+    % number
+    actionChoice = (round(actionChoice + epsilon*randn(1,1))); % epsilon is the exploration. since it is intentional exploration, the learner knows exactly where on the grid they land
+    actionChoice(actionChoice>5) = 5; % this and following 3 lines makes sure the learner stays on grid
+    actionChoice(actionChoice<1) = 1;
+    if action(actionChoice) == 0
+        actionChoice = 5;
+    end
+    
+    % determine the new position after taking action
+    newPos = pos+action(actionChoice); 
+    
+    % measure the cost at new postion after taking action
+    penalty = costGrid(newPos); 
+    
+    % update the prediction of the cost at the new position. If the old
+    % prediction was nan i.e. the learner had no prediction, it just
+    % updates its prediciton with the nnew measurement weigthed by alpha.
+    % If the learner did have a prediction of the cost of the new position,
+    % it adds the new measured cost weighted by alpha to its old
+    % prediction.
+    if isnan(costUpdate(newPos))
+        costUpdate(newPos) = alpha*(penalty);
+    else
+        costUpdate(newPos) = costUpdate(newPos) + alpha*(penalty-costUpdate(newPos));
+    end
+            
+    % update the current postion to the new position. and rerun the loop
+    pos = newPos; 
+    posVec(i) = pos; % adding to the vector for plotting
+    costUpdateVec(i) = costUpdate(newPos); % adding to the vector for plotting
+    actionChoiceVec(i) = actionChoice; % adding to the vector for plotting
+    
+end
+
+%% animations
+
+% this plots the single index value of the position the learner is at
+figure(1);clf; hold on; grid on
+hax1 = axes;
+plot(hax1,posVec,'bo');
+hold on
+
+% this creates the grid world and visualizes the actions. square represents
+% an action of staying put. Green star means the learner found the minimum.
+% red star means that the learner did not find the minimum.
+figure(2);clf;
+hax2 = axes;
+hold on
+X=linspace(1,4,len); hax2.XLim=[0 len];
+Y=linspace(1,4,len); hax2.YLim=[0 len];
+textActualPosX = X-0.9; textMeasPosX = X-0.9;
+textActualPosY = Y-0.9; textMeasPosY = Y-0.1;
+% Horizontal grid 
+for k = 1:length(X)
+  line(hax2.XLim, [Y(k) Y(k)])
+end
+% Vertical grid
+for k = 1:length(Y)
+  line([X(k) X(k)], hax2.YLim)
+end
+axis square
+xticklabels({'','1','','2','','3','','4'})
+yticklabels({'','4','','3','','2','','1'})
+for j=1:len
+    for k=1:len
+        text(hax2,textActualPosX(j),textActualPosY(k),strcat('ActualCost=',num2str(costGrid(len+1-j,k))))
+        hax2t(j,k)=text(hax2,textMeasPosX(j),textMeasPosY(k),strcat('MeasCost=',num2str(costUpdateInit(len+1-j,k))));
+    end
+end
+
+for i=1:maxIter
+    [newPosx,newPosy] = ind2sub(size(costGrid),posVec(i));
+
+    switch actionChoiceVec(i)
+        case 1
+            line(hax2,[newPosy-0.5 newPosy-0.5], [len+1-(newPosx+1)-0.5 len+1-(newPosx+1)-0.3],'Color','b')
+            plot(hax2,newPosy-0.5,len+1-(newPosx+1)-0.3,'b^')
+        case 2
+            line(hax2,[newPosy-0.5 newPosy-0.5], [len+1-(newPosx-1)-0.5 len+1-(newPosx-1)-0.7],'Color','b')
+            plot(hax2,newPosy-0.5,len+1-(newPosx-1)-0.7,'bv')
+        case 3
+            line(hax2,[newPosy+1-0.5 newPosy+1-0.9], [len+1-newPosx-0.5 len+1-newPosx-0.5],'Color','b')
+            plot(hax2,newPosy+1-0.9,len+1-newPosx-0.5,'b<')
+        case 4
+            line(hax2,[newPosy-1-0.5 newPosy-1-0.1], [len+1-newPosx-0.5 len+1-newPosx-0.5],'Color','b')
+            plot(hax2,newPosy-1-0.1,len+1-newPosx-0.5,'b>')
+        case 5
+            plot(hax2,newPosy-0.5, len+1-newPosx-0.5,'bs','MarkerSize',10)
+    end
+    if i==maxIter
+        if newPos==1 || newPos==16
+            plot(hax2,newPosy-0.5, len+1-newPosx-0.5,'gp','MarkerSize',20,'MarkerFaceColor','g')
+        else
+            plot(hax2,newPosy-0.5, len+1-newPosx-0.5,'rp','MarkerSize',20,'MarkerFaceColor','r')
+        end
+    end
+    hax2t(newPosy,len+1-newPosx).String = strcat('MeasCost=',num2str(round(costUpdateVec(i),2)));
+    pause(0.2)
+end

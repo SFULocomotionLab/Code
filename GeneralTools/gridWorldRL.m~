@@ -2,7 +2,7 @@
 % This code was originally written in September 2016. It was edited Nov
 % 2020 to add comments.
 % Written by Surabhi Simha
-clear
+clearvars
 close all
 
 % We have a 4x4 grid and each square on the grid has a cost. The first and
@@ -157,37 +157,35 @@ end
 
 % this plots the single index value of the position the learner is at
 figure(1);clf; hold on; grid on
-plot(posVec,'bo');
-title('Position of learner in the grid world after each step')
-xlabel('Number of steps')
-ylabel('Single index value postion')
+hax1 = axes;
+plot(hax1,posVec,'bo');
+
 
 % this creates the grid world and visualizes the actions. square represents
 % an action of staying put. Green star means the learner found the minimum.
 % red star means that the learner did not find the minimum.
 figure(2);clf;
-hax = axes;
+hax2 = axes;
 hold on
-title('Grid world')
-X=linspace(1,4,len); hax.XLim=[0 len];
-Y=linspace(1,4,len); hax.YLim=[0 len];
+X=linspace(1,4,len); hax2.XLim=[0 len];
+Y=linspace(1,4,len); hax2.YLim=[0 len];
 textActualPosX = X-0.9; textMeasPosX = X-0.9;
 textActualPosY = Y-0.9; textMeasPosY = Y-0.1;
 % Horizontal grid 
 for k = 1:length(X)
-  line(hax.XLim, [Y(k) Y(k)])
+  line(hax2.XLim, [Y(k) Y(k)])
 end
 % Vertical grid
 for k = 1:length(Y)
-  line([X(k) X(k)], hax.YLim)
+  line([X(k) X(k)], hax2.YLim)
 end
 axis square
 xticklabels({'','1','','2','','3','','4'})
 yticklabels({'','4','','3','','2','','1'})
 for j=1:len
     for k=1:len
-        text(hax,textActualPosX(j),textActualPosY(k),strcat('ActualCost=',num2str(costGrid(len+1-j,k))))
-        hax2t(j,k)=text(hax,textMeasPosX(j),textMeasPosY(k),strcat('MeasCost=',num2str(costUpdateInit(len+1-j,k))));
+        text(hax2,textActualPosX(j),textActualPosY(k),strcat('ActualCost=',num2str(costGrid(len+1-j,k))))
+        hax2t(j,k)=text(hax2,textMeasPosX(j),textMeasPosY(k),strcat('MeasCost=',num2str(costUpdateInit(len+1-j,k))));
     end
 end
 
@@ -196,27 +194,27 @@ for i=1:maxIter
 
     switch actionChoiceVec(i)
         case 1
-            line(hax,[newPosy-0.5 newPosy-0.5], [len+1-(newPosx+1)-0.5 len+1-(newPosx+1)-0.3],'Color','b')
-            plot(hax,newPosy-0.5,len+1-(newPosx+1)-0.3,'b^')
+            line(hax2,[newPosy-0.5 newPosy-0.5], [len+1-(newPosx+1)-0.5 len+1-(newPosx+1)-0.3],'Color','b')
+            plot(hax2,newPosy-0.5,len+1-(newPosx+1)-0.3,'b^')
         case 2
-            line(hax,[newPosy-0.5 newPosy-0.5], [len+1-(newPosx-1)-0.5 len+1-(newPosx-1)-0.7],'Color','b')
-            plot(hax,newPosy-0.5,len+1-(newPosx-1)-0.7,'bv')
+            line(hax2,[newPosy-0.5 newPosy-0.5], [len+1-(newPosx-1)-0.5 len+1-(newPosx-1)-0.7],'Color','b')
+            plot(hax2,newPosy-0.5,len+1-(newPosx-1)-0.7,'bv')
         case 3
-            line(hax,[newPosy+1-0.5 newPosy+1-0.9], [len+1-newPosx-0.5 len+1-newPosx-0.5],'Color','b')
-            plot(hax,newPosy+1-0.9,len+1-newPosx-0.5,'b<')
+            line(hax2,[newPosy+1-0.5 newPosy+1-0.9], [len+1-newPosx-0.5 len+1-newPosx-0.5],'Color','b')
+            plot(hax2,newPosy+1-0.9,len+1-newPosx-0.5,'b<')
         case 4
-            line(hax,[newPosy-1-0.5 newPosy-1-0.1], [len+1-newPosx-0.5 len+1-newPosx-0.5],'Color','b')
-            plot(hax,newPosy-1-0.1,len+1-newPosx-0.5,'b>')
+            line(hax2,[newPosy-1-0.5 newPosy-1-0.1], [len+1-newPosx-0.5 len+1-newPosx-0.5],'Color','b')
+            plot(hax2,newPosy-1-0.1,len+1-newPosx-0.5,'b>')
         case 5
-            plot(hax,newPosy-0.5, len+1-newPosx-0.5,'bs','MarkerSize',10)
+            plot(hax2,newPosy-0.5, len+1-newPosx-0.5,'bs','MarkerSize',10)
     end
     if i==maxIter
         if newPos==1 || newPos==16
-            plot(hax,newPosy-0.5, len+1-newPosx-0.5,'gp','MarkerSize',20,'MarkerFaceColor','g')
+            plot(hax2,newPosy-0.5, len+1-newPosx-0.5,'gp','MarkerSize',20,'MarkerFaceColor','g')
         else
-            plot(hax,newPosy-0.5, len+1-newPosx-0.5,'rp','MarkerSize',20,'MarkerFaceColor','r')
+            plot(hax2,newPosy-0.5, len+1-newPosx-0.5,'rp','MarkerSize',20,'MarkerFaceColor','r')
         end
     end
     hax2t(newPosy,len+1-newPosx).String = strcat('MeasCost=',num2str(round(costUpdateVec(i),2)));
-    pause(0.3)
+    pause(0.2)
 end

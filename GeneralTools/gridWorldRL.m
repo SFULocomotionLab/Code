@@ -12,7 +12,7 @@ len = size(costGrid,1);
 
 % here the learner begins with no model of the grid. It just has NaNs as
 % cost for all positions on the grid
-costUpdate = zeros(size(costGrid)); 
+costUpdate = zeros(size(costGrid))+10; 
 costUpdateInit = costUpdate; % for plotting
 
 % startPos is the single number index of a position on the grid as shown
@@ -53,7 +53,7 @@ action = [-1 1 -len len 0];
 % press.
 % We can play around with the value of epsilon to see what happens by
 % increasing or decreasing the variability.
-epsilon = 0.2; % exploration factor. never finds the minimum with 0.
+epsilon = 0.9; % exploration factor. never finds the minimum with 0.
 
 % once the learner has found a cost optimal action, taken the action and
 % measured the actual cost at the new position, it needs to update its
@@ -63,7 +63,7 @@ epsilon = 0.2; % exploration factor. never finds the minimum with 0.
 % has a high alpha weights the new measurement it made highly. We can play
 % around with the value of alpha to see what happens by increasing or
 % decreasing this confidence.
-alpha = 0.7; % how much to weight the new cost finding
+alpha = 0.5; % how much to weight the new cost finding
 
 pos = startPos; % assign the current position of the learner startPos
 posVec = []; %storing as a vector to plot later
@@ -218,5 +218,5 @@ for i=1:maxIter
         end
     end
     hax2t(newPosy,len+1-newPosx).String = strcat('MeasCost=',num2str(round(costUpdateVec(i),2)));
-    pause(0.3)
+    pause(0.5)
 end
